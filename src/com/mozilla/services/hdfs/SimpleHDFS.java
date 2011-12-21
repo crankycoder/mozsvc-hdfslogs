@@ -1,0 +1,148 @@
+package com.mozilla.services.hdfs;
+
+import edu.umd.cloud9.io.JSONObjectWritable;
+import java.io.DataOutputStream;
+import java.io.ByteArrayOutputStream;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.util.ReflectionUtils;
+import org.json.JSONObject;
+import org.json.JSONTokener;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import java.util.ArrayList;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.io.File;
+import java.util.Scanner;
+import java.io.FileInputStream;
+import java.io.IOException;
+
+/*
+ XXX: Note that you MUST have HADOOP_HOME defined, and
+ HADOO_HOME/conf in your classpath or else you won't
+ hit the real network enabled HDFS.  The Configuration object
+ will read config files from HADOOP_HOME/conf.
+
+ Python imports below, need to get rid of all of these
+ */
+
+public class SimpleHDFS {
+
+    Configuration _conf;
+    FileSystem _fs;
+    Class _key_type;
+    Class _value_type;
+
+    public SimpleHDFS()
+    {
+        _conf = new Configuration();
+        try 
+        {
+            _fs = FileSystem.get(_conf);
+        } catch (IOException io_ex) {
+            // Convert to runtime exception since there's no possible
+            // recovery here
+            throw new RuntimeException("Error loading the Hadoop configuration", io_ex);
+        }
+        _key_type = LongWritable.class;
+
+        // The JSONObjectWritable source can be found here
+        // https://github.com/lintool/Cloud9/blob/master/src/dist/edu/umd/cloud9/io/JSONObjectWritable.java
+        _value_type = JSONObjectWritable.class;
+    }
+
+    public ArrayList<String> list(String path) throws IOException
+    {
+        ArrayList result = new ArrayList();
+        Path hdfs_path = new Path(path);
+
+        // List filenames in a path
+        for (FileStatus status : _fs.listStatus(hdfs_path)) {
+            result.add(status.getPath().getName());
+        }
+        return result;
+    }
+
+    public String next_filename(String root_path)
+    {
+        String DATE_FORMAT = "yyyyMMdd";
+        SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
+        Calendar c1 = Calendar.getInstance(); // today
+        String today = sdf.format(c1.getTime());
+        long i = 0;
+
+        Path dir_path = new Path(new File(new File(root_path), today).getPath());
+
+        try {
+            _fs.mkdirs(dir_path);
+        } catch (IOException io_ex) {
+            throw new RuntimeException("Error creating log directory in HDFS", io_ex);
+        }
+
+        String fname = Long.toString(i) + ".log";
+        Path hdfs_log_path = new Path(new File(dir_path.toString(), fname).getPath());
+        try {
+            while (_fs.exists(hdfs_log_path)) {
+                i += 1;
+                fname = Long.toString(i) + ".log";
+                hdfs_log_path = new Path(new File(dir_path.toString(), fname).getPath());
+            }
+        } catch (IOException io_ex) {
+            throw new RuntimeException("Error reading HDFS", io_ex);
+        }
+
+        return hdfs_log_path.toString();
+    }
+
+    public long filesize(String path) throws IOException
+    {
+        Path p = new Path(path);
+        FileStatus fstat = _fs.getFileStatus(p);
+        return fstat.getLen();
+    }
+
+    /*
+    Open a SequenceFile object for append operations.  Note that
+    once the file is closed, you *cannot* append to it anymore.
+    See:
+       https://issues.apache.org/jira/browse/HADOOP-3977
+    */
+    public ISimpleHDFSFile open(String path, String mode) throws IOException
+    {
+
+        if (mode == "w") {
+            return _open_write(path);
+        } else if  (mode == "r") {
+            return _open_read(path);
+        } else {
+            throw new IllegalArgumentException("File mode must be 'r' or 'w'");
+        }
+    }
+
+    public ISimpleHDFSFile _open_read(String path) throws IOException
+    {
+        Path p = new Path(path);
+
+        SequenceFile.Reader reader = new SequenceFile.Reader(_fs, p, _conf);
+        return new SimpleReader(reader, _conf);
+    }
+
+    public ISimpleHDFSFile _open_write(String path) throws IOException
+    {
+        Path p = new Path(path);
+        Path dirname = p.getParent();
+
+        _fs.mkdirs(dirname);
+
+        SequenceFile.Writer writer = SequenceFile.createWriter(_fs, _conf, p, _key_type, _value_type);
+        return new SimpleWriter(writer, _key_type, _value_type);
+    }
+
+}
+
+

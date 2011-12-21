@@ -1,0 +1,7 @@
+lib/logstash-custom.jar
+
+build
+dist
+**/*swp
+*py.class
+*pyc
