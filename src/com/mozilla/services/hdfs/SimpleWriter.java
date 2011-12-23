@@ -34,11 +34,13 @@ public class SimpleWriter implements ISimpleHDFSFile
     LongWritable _key;
     JSONObjectWritable _value;
     long _count;
+    Syslog _syslog;
 
     public SimpleWriter(SequenceFile.Writer sequence_writer, 
             Class key_class, 
             Class value_class)
     {
+        _syslog = new Syslog();
         _sequence_writer = sequence_writer;
         try
         {
@@ -63,12 +65,12 @@ public class SimpleWriter implements ISimpleHDFSFile
             _sequence_writer.append(_key, _value);
             _count += 1;
         } catch (JSONException json_ex) {
-            // TODO: Log the error somewhere, but just skip the record
-            // if it's not really JSON
-            throw new RuntimeException("Invalid JSON data read in", json_ex);
+            // Log the error but just skip the record if it's not
+            // really JSON
+            _syslog.warning("Invalid JSON string. Skipping record. [ "+json_data+"  ]");
         } catch (IOException io_ex) {
-            // TODO: Log the error somewhere, but just skip the record
-            // if we can't write to HDFS
+            // Log the error and abort right away
+            _syslog.error("HDFS IO Error - aborting import: "+ io_ex.toString());
             throw new RuntimeException("HDFS IO error", io_ex);
         }
     }
@@ -89,10 +91,10 @@ public class SimpleWriter implements ISimpleHDFSFile
         try {
             _sequence_writer.sync();
         } catch (IOException io_ex) {
-            // TODO: log this somewhere, but we can probably just skip
-            // this
+            String err_msg = "Error while trying to sync data.  Aborting. " + io_ex.toString();
+            _syslog.error(err_msg);
+            throw new RuntimeException(err_msg, io_ex);
         }
-
     }
 
 
@@ -102,6 +104,7 @@ public class SimpleWriter implements ISimpleHDFSFile
         try {
             _sequence_writer.close();
         } catch (IOException io_ex) {
+            _syslog.error("Error while trying to close HDFS stream.  Aborting. " + io_ex.toString());
             throw new RuntimeException("Error closing HDFS file", io_ex);
         }
     }
@@ -113,7 +116,7 @@ public class SimpleWriter implements ISimpleHDFSFile
 
     public void remove()
     {
-        // TODO:  raise an error
+        throw new RuntimeException("Remove is not supported");
     }
 
     public boolean hasNext()

@@ -25,6 +25,7 @@ public class TestHDFS
         } catch (IOException io_ex) {
             throw new RuntimeException("Error loading the log file send to HDFS", io_ex);
         }
+
         try {
             writer = fs.open(fname, "w");
             try {
@@ -57,5 +58,13 @@ public class TestHDFS
         }
         assert record_count == 2000;
 
+        test_syslogger();
+    }
+
+    public static void test_syslogger()
+    {
+        Syslog logger = new Syslog();
+        logger.error("This is a test from java");
+        logger.closelog();
     }
 }

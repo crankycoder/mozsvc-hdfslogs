@@ -34,7 +34,7 @@ class SimpleReader implements ISimpleHDFSFile
 
     public void remove()
     {
-        // TODO:  raise an error
+        throw new RuntimeException("Remove is not supported");
     }
 
     public SimpleReader(SequenceFile.Reader reader, Configuration conf) 
