@@ -2,6 +2,7 @@ lib/logstash-custom.jar
 
 build
 dist
-**/*swp
+**/*.swp
+**/*.swo
 *py.class
 *pyc
