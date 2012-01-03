@@ -73,9 +73,8 @@ class SimpleReader implements ISimpleHDFSFile
         return result;
     }
 
-    public void append(String ignored)
+    public void append_obj(JSONObject json_obj)
     {
-        
     }
     public void close()
     {

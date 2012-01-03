@@ -5,7 +5,7 @@ import org.json.JSONObject;
 
 public interface ISimpleHDFSFile extends Iterator
 {
-    public void append(String json_data);
+    public void append_obj(JSONObject jdata);
 
     public void close();
 }

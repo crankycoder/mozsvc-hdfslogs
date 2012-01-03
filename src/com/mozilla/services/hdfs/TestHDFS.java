@@ -1,12 +1,18 @@
 package com.mozilla.services.hdfs;
 
 import java.io.*;
-import org.junit.Test;
-import java.util.Scanner;
-import java.util.Random;
+import org.junit.*;
+import java.util.*;
+import org.json.JSONObject;
 
-public class TestHDFS
+/*
+ * You'll need to have your Hadoop instance running
+ *
+ */
+
+public class TestHDFS 
 {
+
     public static void main(String[] argv) throws Throwable
     {
         Random randomGenerator = new Random();
@@ -31,7 +37,8 @@ public class TestHDFS
             try {
                 record_count = 0;
                 while (scanner.hasNextLine()) {
-                    writer.append(scanner.nextLine());
+                    JSONObject j_obj = new JSONObject(scanner.nextLine());
+                    writer.append_obj(j_obj);
                     record_count += 1;
                 }
             } finally {
@@ -57,14 +64,14 @@ public class TestHDFS
             reader.close();
         }
         assert record_count == 2000;
+        System.out.println("Record_count : " + record_count);
 
-        test_syslogger();
-    }
-
-    public static void test_syslogger()
-    {
         Syslog logger = new Syslog();
         logger.error("This is a test from java");
         logger.closelog();
+        // TODO: test the syslog
     }
+
+
+
 }

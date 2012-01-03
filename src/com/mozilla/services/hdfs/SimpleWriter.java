@@ -54,26 +54,25 @@ public class SimpleWriter implements ISimpleHDFSFile
         _count = 0;
     }
 
-    public void append(String json_data)
+    public void append_obj(JSONObject jdata)
     {
         _key.set(_count);
         _value.clear();
-        JSONObject jdata;
         try {
-            jdata = new JSONObject(new JSONTokener(json_data));
             _value.put("json", jdata);
             _sequence_writer.append(_key, _value);
             _count += 1;
         } catch (JSONException json_ex) {
             // Log the error but just skip the record if it's not
             // really JSON
-            _syslog.warning("Invalid JSON string. Skipping record. [ "+json_data+"  ]");
+            _syslog.warning("Invalid JSON string. Skipping record. [ "+jdata+"  ]");
         } catch (IOException io_ex) {
             // Log the error and abort right away
             _syslog.error("HDFS IO Error - aborting import: "+ io_ex.toString());
             throw new RuntimeException("HDFS IO error", io_ex);
         }
     }
+
 
     public long getLength()
     {
@@ -123,6 +122,4 @@ public class SimpleWriter implements ISimpleHDFSFile
     {
         return false;
     }
-
-
 }
