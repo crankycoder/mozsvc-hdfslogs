@@ -59,9 +59,14 @@
     </target>
 
     <target name="run_logparse">
+        <!--
+              This target runs the command line log reader
+         -->
         <java classname="com.mozilla.services.hdfs.LogReader">
             <arg value="-i" />
             <arg value="logfile.json" />
+            <arg value="-hdfs_path" />
+            <arg value="/var/log/metlog/" />
             <classpath>
                 <fileset dir="lib" includes="**/*.jar"/>
                 <fileset dir="${dist}/lib/" includes="*.jar" />

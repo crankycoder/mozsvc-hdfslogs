@@ -21,7 +21,7 @@ public class TestHDFS
         ISimpleHDFSFile reader;
         SimpleHDFS fs = new SimpleHDFS();
 
-        String fname = fs.next_filename("/tmp/var/lock/"+ randomGenerator.nextInt(99999));
+        String fname = fs.next_filename("/hdfs/"+ randomGenerator.nextInt(99999));
         System.out.println("Using: " + fname);
 
         Scanner scanner;

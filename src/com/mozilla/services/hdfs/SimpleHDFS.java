@@ -9,6 +9,7 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -21,6 +22,7 @@ import java.io.File;
 import java.util.Scanner;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.FileNotFoundException;
 
 /*
  XXX: Note that you MUST have HADOOP_HOME defined, and
@@ -31,19 +33,18 @@ import java.io.IOException;
  Python imports below, need to get rid of all of these
  */
 
-public class SimpleHDFS {
+public class SimpleHDFS extends Configured {
 
-    Configuration _conf;
     FileSystem _fs;
     Class _key_type;
     Class _value_type;
 
     public SimpleHDFS()
     {
-        _conf = new Configuration();
+        setConf(new Configuration());
         try 
         {
-            _fs = FileSystem.get(_conf);
+            _fs = FileSystem.get(getConf());
         } catch (IOException io_ex) {
             // Convert to runtime exception since there's no possible
             // recovery here
@@ -76,17 +77,13 @@ public class SimpleHDFS {
         String today = sdf.format(c1.getTime());
         long i = 0;
 
-        Path dir_path = new Path(new File(new File(root_path), today).getPath());
+        Path dir_path = new Path(root_path);
 
-        try {
-            _fs.mkdirs(dir_path);
-        } catch (IOException io_ex) {
-            throw new RuntimeException("Error creating log directory in HDFS", io_ex);
-        }
 
         String fname = Long.toString(i) + ".log";
         Path hdfs_log_path = new Path(new File(dir_path.toString(), fname).getPath());
         try {
+            safe_mkdir(dir_path);
             while (_fs.exists(hdfs_log_path)) {
                 i += 1;
                 fname = Long.toString(i) + ".log";
@@ -128,18 +125,41 @@ public class SimpleHDFS {
     {
         Path p = new Path(path);
 
-        SequenceFile.Reader reader = new SequenceFile.Reader(_fs, p, _conf);
-        return new SimpleReader(reader, _conf);
+        SequenceFile.Reader reader = new SequenceFile.Reader(_fs, p, getConf());
+        return new SimpleReader(reader, getConf());
+    }
+
+    private void safe_mkdir(Path f) throws IOException
+    {
+        FileStatus fstatus = null;
+        try {
+            fstatus = _fs.getFileStatus(f);
+            if (fstatus.isDir()) {
+                System.out.println("Directory already exists!");
+                return;
+            }
+            else {
+                throw new IOException(f.toString() + " exists but " +
+                        "is not a directory");
+            }
+        } catch(FileNotFoundException e) {
+            System.out.println("Trying to create directory: ["+f.toString()+"]");
+            if (!_fs.mkdirs(f)) {
+                throw new IOException("failed to create " + f.toString());
+            } else {
+                System.out.println("Seemed to create directory: ["+f.toString()+"]");
+            }
+        }
     }
 
     public ISimpleHDFSFile _open_write(String path) throws IOException
     {
         Path p = new Path(path);
-        Path dirname = p.getParent();
+        Path dir_path= p.getParent();
 
-        _fs.mkdirs(dirname);
+        safe_mkdir(dir_path);
 
-        SequenceFile.Writer writer = SequenceFile.createWriter(_fs, _conf, p, _key_type, _value_type);
+        SequenceFile.Writer writer = SequenceFile.createWriter(_fs, getConf(), p, _key_type, _value_type);
         return new SimpleWriter(writer, _key_type, _value_type);
     }
 

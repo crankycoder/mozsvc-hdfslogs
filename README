@@ -1,0 +1,7 @@
+You need *both* HADOOP_HOME and the HADOOP_HOME/conf paths in your
+classpath.
+
+So something like this:
+
+    export HADOOP_HOME="/Users/victorng/dev/hadoop-0.20.203.0/"
+    export CLASSPATH="./lib/*:dist/lib/mozsvc-hdfs-20120104.jar:/Users/victorng/dev/hadoop-0.20.203.0/conf"

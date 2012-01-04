@@ -139,8 +139,9 @@ public class LogReader
                         JSONObject j_obj = new JSONObject(scanner.nextLine());
                         writer.append_obj(j_obj);
                     } catch (JSONException json_ex) {
-                        String msg = "Error parsing JSON from log";
-                        _syslog.error(msg + json_ex.toString());
+                        String msg = "Error parsing JSON from log: " + json_ex.toString();
+                        System.out.println(msg);
+                        _syslog.error(msg);
                     }
                 }
                 // Rename the log file once it has been processed
@@ -173,12 +174,12 @@ public class LogReader
 
         try 
         {
-            if (reader.jsonlist) {
-                // handle reading a big blob of JSON here
-                reader.parse_json_blob();
-            } else {
+            //if (reader.jsonlist) {
+             //   // handle reading a big blob of JSON here
+              //  reader.parse_json_blob();
+            //} else {
                 reader.parse_jsonlog();
-            }
+            //}
         } catch (RuntimeException re_ex) {
             Writer result = new StringWriter();
             PrintWriter printWriter = new PrintWriter(result);
@@ -186,7 +187,8 @@ public class LogReader
 
             // Rename the log file if it wasn't processed properly
             File f = new File(reader.input_file);
-            f.renameTo(new File(reader.input_file+ ".io_exception"));
+            //f.renameTo(new File(reader.input_file+ ".io_exception"));
+            System.out.println(result.toString());
         }
 
     }

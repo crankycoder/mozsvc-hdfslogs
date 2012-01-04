@@ -5,4 +5,4 @@ test:
 	ant -DJAVA_HOME=$(JAVA_HOME) -v test
 
 run:
-	ant -DJAVA_HOME=$(JAVA_HOME) run_logparse
+	./runme.sh
