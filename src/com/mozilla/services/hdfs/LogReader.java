@@ -20,6 +20,9 @@ import java.util.Scanner;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.json.JSONException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.io.FileOutputStream;
 
 /*
  * This class will read in a JSON log file in one of two formats,
@@ -35,9 +38,6 @@ import org.json.JSONException;
 
 public class LogReader
 {
-    @Parameter(names = "-jsonlist", description = "Load log as a JSON list structure")
-    public boolean jsonlist = false;
-
     @Parameter(names = "-i", arity = 1, description = "Input JSON logfile", required=true)
     public String input_file;
 
@@ -49,6 +49,9 @@ public class LogReader
 
     @Parameter(names = "--help", description = "Print help")
     public boolean help = false;
+
+    @Parameter(names = "-move", description = "Move processed files")
+    public boolean move_files= false;
 
     private String readFile(String path) throws IOException {
         FileInputStream stream = new FileInputStream(new File(path));
@@ -63,58 +66,6 @@ public class LogReader
         }
     }
 
-//    /*
-//     * This method will parse a JSON log file and store it into HDFS
-//     */
-//    public void parse_json_blob()
-//    {
-//
-//        SimpleHDFS fs = new SimpleHDFS();
-//        ISimpleHDFSFile writer;
-//        Syslog _syslog = new Syslog();
-//        String fname = fs.next_filename(hdfs_path);
-//
-//        String json_data = null;
-//        JSONObject jdata = null;
-//        JSONObject item = null;
-//        try
-//        {
-//            json_data = readFile(input_file);
-//            jdata = new JSONObject(new JSONTokener(json_data));
-//        } catch (IOException io_ex) {
-//            throw new RuntimeException("Error reading log file", io_ex);
-//        } catch (JSONException json_ex) {
-//            throw new RuntimeException("Error reading JSON from log file", json_ex);
-//        }
-//
-//        try {
-//            writer = fs.open(fname, "w");
-//            try {
-//                // The JSON blob must be a dictionary with a key of
-//                // 'payload' and a value which is a list of JSON
-//                // messages
-//                long num_items = 0;
-//                num_items = ((JSONObject)jdata.get("payload")).length();
-//                for (int i = 0; i < num_items; i++)
-//                {
-//                    item = (JSONObject)((JSONObject)jdata.get("payload")).get(Integer.toString(i));
-//                    writer.append_obj(item);
-//                }
-//                // Rename the log file once it has been processed
-//                File f = new File(fname);
-//                f.renameTo(new File(fname + ".processed"));
-//            } catch (JSONException json_ex) {
-//                throw new RuntimeException("Invalid JSON blob log", json_ex);
-//            } finally {
-//                writer.close();
-//            }
-//        } catch (IOException io_ex) {
-//            String msg = "HDFS IO Error.";
-//            _syslog.error(msg + io_ex.toString());
-//            throw new RuntimeException(msg, io_ex);
-//        }
-//    }
-
     /*
      * This method will parse a JSON log file and store it into HDFS
      */
@@ -126,11 +77,12 @@ public class LogReader
         Syslog _syslog = new Syslog();
 
         String fname = fs.next_filename(hdfs_path);
+        System.out.println("Next filename: ["+fname+"]");
 
         try {
             scanner  = new Scanner(new FileInputStream(input_file), "utf8");
         } catch (IOException io_ex) {
-            throw new RuntimeException("Error loading the log file send to HDFS", io_ex);
+            throw new RuntimeException("Error opening the log file send to HDFS", io_ex);
         }
 
         try {
@@ -147,11 +99,8 @@ public class LogReader
                         _syslog.error(msg);
                     }
                 }
-                // Rename the log file once it has been processed
-                // TODO: capture the short filename and move the
-                // processed log file into the output_dir directory
-                File f = new File(fname);
-                f.renameTo(new File(fname + ".processed"));
+                finished_processing(input_file);
+
             } finally {
                 writer.close();
             }
@@ -165,6 +114,55 @@ public class LogReader
         }
     }
 
+    private boolean check_dstdir()
+    {
+        if (!this.move_files) {
+            return true;
+        } else {
+            File dst_dir = new File(this.output_dir);
+            return dst_dir.exists() && dst_dir.isDirectory();
+        }
+    }
+
+    public void io_error_processing(String fname)
+    {
+        mv_file(fname, "io_error");
+    }
+
+    public void finished_processing(String fname)
+    {
+        mv_file(fname, null);
+    }
+
+    private void mv_file(String fname, String extension)
+    {
+        String short_name;
+        String src_path = new File(fname).getParentFile().getPath();
+
+        if (extension != null) {
+            short_name  = new File(fname).getName() + "." + extension;
+        } else {
+            short_name  = new File(fname).getName();
+        }
+
+        File dst_dir = new File(this.output_dir);
+        File dst_file = new File(dst_dir, short_name);
+
+        if (this.move_files) {
+            File f = new File(fname);
+            if (!f.renameTo(dst_file)) {
+                try
+                {
+                    copyFile(f, dst_file);
+                    f.delete();
+                } catch (IOException io_ex) {
+                    throw new RuntimeException("Can't move file: ["+fname+"] to ["+dst_file+"]", io_ex);
+                }
+            }
+        }
+    }
+
+
     public static void main(String[] argv)
     {
         LogReader reader = new LogReader();
@@ -177,25 +175,50 @@ public class LogReader
             return;
         }
 
-        try 
+        if (!reader.check_dstdir()) {
+            System.out.println("Destination directory check failed on ["+reader.output_dir+"]");
+            return;
+        }
+
+        try
         {
-            //if (reader.jsonlist) {
-             //   // handle reading a big blob of JSON here
-              //  reader.parse_json_blob();
-            //} else {
-                reader.parse_jsonlog();
-            //}
+            reader.parse_jsonlog();
         } catch (RuntimeException re_ex) {
             Writer result = new StringWriter();
             PrintWriter printWriter = new PrintWriter(result);
             re_ex.printStackTrace(printWriter);
 
-            // Rename the log file if it wasn't processed properly
-            File f = new File(reader.input_file);
-            f.renameTo(new File(reader.input_file+ ".io_exception"));
+            reader.io_error_processing(reader.input_file);
             System.out.println(result.toString());
         }
 
+    }
+
+    public static void copyFile(File sourceFile, File destFile) throws IOException {
+        if(!destFile.exists()) {
+            destFile.createNewFile();
+        }
+
+        FileChannel source = null;
+        FileChannel destination = null;
+        try {
+            source = new FileInputStream(sourceFile).getChannel();
+            destination = new FileOutputStream(destFile).getChannel();
+
+            // previous code: destination.transferFrom(source, 0, source.size());
+            // to avoid infinite loops, should be:
+            long count = 0;
+            long size = source.size();
+            while((count += destination.transferFrom(source, 0, size-count))<size);
+        }
+        finally {
+            if(source != null) {
+                source.close();
+            }
+            if(destination != null) {
+                destination.close();
+            }
+        }
     }
 }
 

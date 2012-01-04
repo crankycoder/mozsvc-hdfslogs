@@ -135,7 +135,6 @@ public class SimpleHDFS extends Configured {
         try {
             fstatus = _fs.getFileStatus(f);
             if (fstatus.isDir()) {
-                System.out.println("Directory already exists!");
                 return;
             }
             else {

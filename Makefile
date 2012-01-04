@@ -1,16 +1,12 @@
+# Need to setup some environment variables for Hadoop
+HADOOP_HOME := "/Users/victorng/dev/hadoop-0.20.203.0/"
+CLASSPATH := "./lib/*:dist/lib/*:/Users/victorng/dev/hadoop-0.20.203.0/conf"
+
 all:
 	ant -DJAVA_HOME=$(JAVA_HOME)
 
 test:
-	echo "This won't work properly.  See the Makefile for details"
-	# This ant command *should* work, except that the classpath 
-	# in the environment is actually rewritten and effectively ignored
-	# by ant.  In doing so, the HADOOP_HOME/conf directory leaves
-	# CLASSPATH and the HDFS DFS can't be located properly.
-	#  
-	# ant -DJAVA_HOME=$(JAVA_HOME) -v test
-	#
-	# The only way to make it work properly is to not use ant.
+	ant -DJAVA_HOME=$(JAVA_HOME) -v test
 
 run:
-	./runme.sh
+	/usr/bin/env java -classpath $(CLASSPATH) com.mozilla.services.hdfs.LogReader -i fixtures/sample.json.log -hdfs_path /hdfs/var/log/metlog -output_dir /tmp/done -move
