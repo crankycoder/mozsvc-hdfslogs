@@ -1,0 +1,18 @@
+"/var/log/logstash/metlog.log" {
+    rotate 20
+    size=64M
+    nocreate
+    postrotate
+        # change this to whatever you're doing to manage your process
+        # and send it a SIGHUP
+        # svc -h will send SIGHUP to logstash if managed by
+        # daemontools
+        # /sbin/svc -h /service/logstash
+
+        # This line is obviously wrong - but i have no other Java
+        # processes, so it's good enough for testing logstash
+        # In real life, just use daemontools.
+        /usr/bin/killall -HUP java
+
+    endscript
+}
