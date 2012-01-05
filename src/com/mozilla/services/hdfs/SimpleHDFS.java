@@ -23,6 +23,7 @@ import java.util.Scanner;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.FileNotFoundException;
+import java.net.URL;
 
 /*
  XXX: Note that you MUST have HADOOP_HOME defined, and
@@ -41,10 +42,19 @@ public class SimpleHDFS extends Configured {
 
     public SimpleHDFS()
     {
-        setConf(new Configuration());
+        Configuration conf = new Configuration();
+
+        URL conf_url = new URL("file:///Users/victorng/dev/hadoop-0.20.203.0/conf/hadoop-site.xml");
+
+        conf.addResource(conf_url);
+        setConf(conf);
+        System.out.println("Using configuration: " + conf);
         try 
         {
             _fs = FileSystem.get(getConf());
+            if ("org.apache.hadoop.fs.LocalFileSystem".equals(_fs.getClass().getName())){
+                throw new RuntimeException("Failed to load DFS configuration for Hadoop");
+            }
         } catch (IOException io_ex) {
             // Convert to runtime exception since there's no possible
             // recovery here
