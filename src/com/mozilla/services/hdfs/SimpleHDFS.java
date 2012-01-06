@@ -42,13 +42,23 @@ public class SimpleHDFS extends Configured {
 
     public SimpleHDFS()
     {
+        // Not sure why you'd really want to do this and have hadoop
+        // config in your classpath..., but hey sure.
         Configuration conf = new Configuration();
+        init(conf);
+    }
 
-        URL conf_url = new URL("file:///Users/victorng/dev/hadoop-0.20.203.0/conf/hadoop-site.xml");
-
+    public SimpleHDFS(URL conf_url)
+    {
+        Configuration conf = new Configuration();
         conf.addResource(conf_url);
+        
+        init(conf);
+    }
+
+    public void init(Configuration conf)
+    {
         setConf(conf);
-        System.out.println("Using configuration: " + conf);
         try 
         {
             _fs = FileSystem.get(getConf());
@@ -152,11 +162,8 @@ public class SimpleHDFS extends Configured {
                         "is not a directory");
             }
         } catch(FileNotFoundException e) {
-            System.out.println("Trying to create directory: ["+f.toString()+"]");
             if (!_fs.mkdirs(f)) {
                 throw new IOException("failed to create " + f.toString());
-            } else {
-                System.out.println("Seemed to create directory: ["+f.toString()+"]");
             }
         }
     }

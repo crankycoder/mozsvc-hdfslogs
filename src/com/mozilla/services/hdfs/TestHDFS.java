@@ -22,7 +22,6 @@ public class TestHDFS
         SimpleHDFS fs = new SimpleHDFS();
 
         String fname = fs.next_filename("/hdfs/"+ randomGenerator.nextInt(99999));
-        System.out.println("Using: " + fname);
 
         Scanner scanner;
 
@@ -64,7 +63,6 @@ public class TestHDFS
             reader.close();
         }
         assert record_count == 2000;
-        System.out.println("Record_count : " + record_count);
 
         Syslog logger = new Syslog();
         logger.error("This is a test from java");

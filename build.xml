@@ -58,28 +58,6 @@
         </java>
     </target>
 
-    <target name="run_logparse">
-        <!--
-              This target runs the command line log reader
-         -->
-        <java classname="com.mozilla.services.hdfs.LogReader">
-            <arg value="-i" />
-            <arg value="logfile.json" />
-            <arg value="-hdfs_path" />
-            <arg value="/var/log/metlog/" />
-            <classpath>
-                <fileset dir="lib" includes="**/*.jar"/>
-                <fileset dir="${dist}/lib/" includes="*.jar" />
-                <!-- 
-            Not sure why, but on apple machines, you rt.jar
-            isn't in the classpath already, and the file isn't called rt.jar on
-            apple - it's classes.jar
-                -->
-                <fileset dir="${JAVA_HOME}/bundle/Classes" includes="classes.jar" />
-            </classpath>
-        </java>
-    </target>
-
     <target name="clean"
         description="clean up" >
         <!-- Delete the ${build} and ${dist} directory trees -->
