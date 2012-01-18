@@ -55,11 +55,6 @@ public class LogReader
     @Parameter(names = "-debug", description = "If debug is enabled, do *not* move processed files. Default is false.")
     public boolean debug= false;
 
-    @Parameter(names = "-sitexml", arity = 1, description = "Path to hadoop-site.xml", required=true)
-    public String site_xml;
-
-    public URL conf_url = null;
-
     Syslog _syslog = new Syslog();
 
     private String readFile(String path) throws IOException {
@@ -80,7 +75,7 @@ public class LogReader
      */
     public void parse_jsonlog()
     {
-        SimpleHDFS fs = new SimpleHDFS(this.conf_url);
+        SimpleHDFS fs = new SimpleHDFS();
         ISimpleHDFSFile writer;
         Scanner scanner;
 
@@ -123,7 +118,7 @@ public class LogReader
     private boolean check_dstdir()
     {
         if (this.debug) {
-            System.err.println("Skipping directory check in DEBUG mode");
+            new Syslog().error("Skipping directory check in DEBUG mode");
             return true;
         } else {
             File dst_dir = new File(this.output_dir);
@@ -156,7 +151,7 @@ public class LogReader
         File dst_file = new File(dst_dir, short_name);
 
         if (this.debug) {
-            System.err.println("Skipping file move in DEBUG mode for ["+fname+"]");
+            new Syslog().error("Skipping file move in DEBUG mode for ["+fname+"]");
             return;
         }
 
@@ -185,7 +180,7 @@ public class LogReader
             return;
         }
 
-        check_site_xml(reader);
+        //check_site_xml(reader);
 
         if (!reader.check_dstdir()) {
             return;
@@ -232,16 +227,5 @@ public class LogReader
         }
     }
 
-    public static void check_site_xml(LogReader reader)
-    {
-        String url_str = null;
-        try 
-        {
-            url_str = "file://" + new File(reader.site_xml).getAbsolutePath();
-            reader.conf_url  = new URL(url_str);
-        } catch (MalformedURLException mal_url) {
-            throw new RuntimeException("Invalid URL for file: "+ url_str, mal_url);
-        }
-    }
 }
 
