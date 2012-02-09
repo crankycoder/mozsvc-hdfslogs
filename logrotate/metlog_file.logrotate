@@ -1,18 +1,14 @@
-"/var/log/logstash/metlog.log" {
+"/tmp/metlog_hdfs.log" {
     rotate 20
     size=64M
-    nocreate
+    create
+    ifempty
     postrotate
-        # change this to whatever you're doing to manage your process
-        # and send it a SIGHUP
         # svc -h will send SIGHUP to logstash if managed by
         # daemontools
-        # /sbin/svc -h /service/logstash
+        #/sbin/svc -h /service/logstash
 
-        # This line is obviously wrong - but i have no other Java
-        # processes, so it's good enough for testing logstash
-        # In real life, just use daemontools.
-        /usr/bin/killall -HUP java
-
+        # Ship logs to HDFS
+    /opt/metlog/bin/rotate_logs.sh
     endscript
 }
