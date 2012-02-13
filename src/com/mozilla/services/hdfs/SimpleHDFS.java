@@ -48,14 +48,6 @@ public class SimpleHDFS extends Configured {
         init(conf);
     }
 
-    public SimpleHDFS(URL conf_url)
-    {
-        Configuration conf = new Configuration();
-        conf.addResource(conf_url);
-        
-        init(conf);
-    }
-
     public void init(Configuration conf)
     {
         setConf(conf);
