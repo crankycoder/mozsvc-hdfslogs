@@ -6,11 +6,8 @@ import org.apache.hadoop.io.IOUtils;
 import org.json.JSONObject;
 import org.apache.hadoop.util.ReflectionUtils;
 import java.io.IOException;
-import org.json.JSONException;
-
 import org.apache.hadoop.io.LongWritable;
 import edu.umd.cloud9.io.JSONObjectWritable;
-import java.util.Iterator;
 
 class SimpleReader implements ISimpleHDFSFile
 {
